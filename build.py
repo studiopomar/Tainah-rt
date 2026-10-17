@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """Compila a biblioteca Tainah e executa seu teste de ABI."""
 import argparse
+import math
 import os
 import pathlib
 import shutil
+import struct
 import subprocess
 import sys
+import wave
 
 
 ROOT = pathlib.Path(__file__).resolve().parent
@@ -46,7 +49,7 @@ def main():
 
     destination = engine / "src" / "Tainah"
     destination.mkdir(exist_ok=True)
-    for name in ("tainah.h", "tainah.cpp", "tainah_abi_test.cpp", "CMakeLists.txt"):
+    for name in ("tainah.h", "tainah.cpp", "tainah_cli.cpp", "tainah_abi_test.cpp", "CMakeLists.txt"):
         shutil.copy2(ROOT / "src" / "Tainah" / name, destination / name)
     shutil.copy2(ROOT / "patches" / "lessConfigure.h", engine / "src" / "ConfigUnit" / "lessConfigure.h")
     shutil.copy2(
@@ -76,7 +79,7 @@ def main():
     run(configure)
     run([
         "cmake", "--build", str(build), "--config", "Release",
-        "--target", "lessampler_tainah", "lessampler_tainah_abi_test", "--parallel", "4",
+        "--target", "lessampler_tainah", "Tainah", "lessampler_tainah_abi_test", "--parallel", "4",
     ])
     listing = subprocess.check_output(
         ["ctest", "--test-dir", str(build), "-N", "-R", "tainah_abi"], text=True
@@ -97,7 +100,38 @@ def main():
         raise SystemExit(f"era esperada uma biblioteca; encontradas: {libraries}")
     package.mkdir(parents=True, exist_ok=True)
     shutil.copy2(libraries[0], package / libraries[0].name)
+    if sys.platform == "darwin":
+        shutil.copy2(libraries[0], package / "liblessampler_tainah.1.dylib")
+    executables = list(build.rglob("Tainah.exe")) if sys.platform == "win32" else list(build.rglob("Tainah"))
+    executables = [path for path in executables if path.is_file() and "CMakeFiles" not in path.parts]
+    if len(executables) != 1:
+        raise SystemExit(f"era esperado um executável Tainah; encontrados: {executables}")
+    shutil.copy2(executables[0], package / executables[0].name)
     shutil.copy2(engine / "LICENSE", package / "licenca-da-base-LGPL-3.0.txt")
+    shutil.copy2(ROOT / "LICENSE", package / "LICENSE")
+    shutil.copy2(ROOT / "NOTICE.md", package / "NOTICE.md")
+    shutil.copy2(ROOT / "src" / "Tainah" / "Tainah.yaml", package / "Tainah.yaml")
+    test_dir = work / "cli-smoke-test"
+    test_dir.mkdir(parents=True, exist_ok=True)
+    input_wav = test_dir / "entrada.wav"
+    output_wav = test_dir / "saida.wav"
+    rate = 44100
+    with wave.open(str(input_wav), "wb") as wav:
+        wav.setnchannels(1)
+        wav.setsampwidth(2)
+        wav.setframerate(rate)
+        samples = (int(10000 * (math.sin(2 * math.pi * 220 * i / rate) + 0.2 * math.sin(2 * math.pi * 440 * i / rate))) for i in range(rate))
+        wav.writeframes(b"".join(struct.pack("<h", sample) for sample in samples))
+    executable = package / ("Tainah.exe" if sys.platform == "win32" else "Tainah")
+    run([str(executable), str(input_wav), str(output_wav), "A3", "100", "g0B0H0",
+         "0", "250", "50", "0", "100", "0", "!120", "AABk#48#"])
+    with wave.open(str(output_wav), "rb") as wav:
+        samples = wav.readframes(wav.getnframes())
+        if wav.getnchannels() != 1 or wav.getframerate() != rate or wav.getnframes() != 11025:
+            raise SystemExit("o teste do executável produziu taxa ou duração inesperada")
+        if not samples or max(abs(value[0]) for value in struct.iter_unpack("<h", samples)) < 1:
+            raise SystemExit("o teste do executável produziu áudio silencioso")
+    print("Executável testado: WAV mono, 44,1 kHz, 250 ms e áudio presente.")
     print(package)
 
 

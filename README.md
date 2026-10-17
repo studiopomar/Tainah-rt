@@ -1,140 +1,121 @@
 # Tainah
 
-**Biblioteca compartilhada de resampling vocal com análise e síntese WORLD.**
+**Um resampler vocal com síntese WORLD para UTAU, OpenUtau e outros aplicativos.**
 
-Tainah é uma biblioteca C++ com ABI C versionada, criada para ser carregada por
-aplicativos de síntese vocal. No momento, o Kamafeu Studio é seu consumidor
-integrado. O projeto não fornece um executável independente que implemente o
-protocolo clássico de linha de comando do UTAU.
+Tainah é um programa de código aberto que transforma uma amostra vocal em uma nota
+com a altura e a duração pedidas pelo projeto. A versão para Windows pode ser usada
+com o UTAU clássico e com o OpenUtau. As versões para macOS e Linux são destinadas
+ao OpenUtau.
 
-## Sobre o nome
+## Baixar
 
-O motor usa a grafia **Tainah**. A forma do nome mais difundida no Brasil é
-**Tainá**, frequentemente traduzida como “estrela” ou “estrela da manhã”. Há,
-porém, uma divergência linguística: o linguista Eduardo de Almeida Navarro,
-da USP, descreve Tainá como alteração de Taína, do Nheengatu, com o sentido de
-“criança”. Por isso, este projeto registra as duas interpretações em vez de
-apresentar uma etimologia única como consenso. A grafia Tainah é a identidade
-escolhida para o software.
+Os pacotes prontos para uso ficam na página [Versões](../../releases/latest):
 
-## O que oferece
+- **Windows x64:** `Tainah-windows-x64.zip`
+- **macOS Apple Silicon:** `Tainah-macos-arm64.zip`
+- **Linux x64:** `Tainah-linux-x64.zip`
 
-- análise de F0, envoltória espectral e aperiodicidade com WORLD;
-- preservação das regiões de ataque, sustentação e cauda a partir de dados de
-  `oto.ini`;
-- duração de saída exata, curva completa de pitch e cancelamento por callback;
-- parâmetros de voz e flags `g`, `t`, `B` e `H`;
-- ABI C versionada, consulta de versão, liberação de PCM e diagnósticos explícitos;
-- cache de análise em memória e no diretório de cache do usuário, fora dos
-  voicebanks;
-- testes de ABI para parâmetros inválidos, cancelamento, cobertura, duração,
-  pitch, flags, marcadores, silêncio e invalidação do cache.
+Cada pacote contém o executável, a biblioteca que ele utiliza e a licença. Extraia
+todos os arquivos para uma pasta e selecione `Tainah.exe` (Windows) ou `Tainah`
+(macOS/Linux) como resampler no aplicativo. Mantenha o executável e a biblioteca na
+mesma pasta. O arquivo `Tainah.yaml` apresenta as quatro expressões do motor ao
+OpenUtau. Adicione o resampler nas preferências e selecione-o no projeto. No UTAU
+clássico, escolha o executável nas configurações de resampler.
 
-Falhas de análise, cobertura insuficiente, síntese inválida ou saída silenciosa
-retornam erro. O motor não troca silenciosamente para SOLA ou redimensionamento
-de pitch.
+O macOS pode pedir autorização na primeira abertura, pois os pacotes não são
+assinados pela Apple. Se isso acontecer, abra **Ajustes do Sistema → Privacidade e
+Segurança** e permita a execução do Tainah.
+
+## O que o Tainah faz
+
+- Analisa a amostra e ressintetiza a voz com WORLD.
+- Usa `offset`, `consonant` e `cutoff` recebidos do projeto para respeitar os dados
+  de `oto.ini`.
+- Mantém o tamanho de saída pedido pelo aplicativo.
+- Lê a curva de pitch enviada pelo OpenUtau.
+- Oferece as flags `g`, `t`, `B` e `H`.
+- Mostra um diagnóstico no terminal quando não consegue abrir, analisar ou
+  sintetizar a amostra.
+
+O mecanismo não troca para outro tipo de síntese quando a análise WORLD falha.
 
 ## Flags
 
-As flags diferenciam maiúsculas de minúsculas. Valores fora das faixas abaixo
-são limitados ao intervalo aceito.
+As letras diferenciam maiúsculas de minúsculas. Os valores são limitados à faixa
+aceita pelo motor.
 
 | Flag | Faixa | Efeito |
 | --- | ---: | --- |
-| `g` | −100 a +100 | Inclina a envoltória espectral, sem alterar a F0. |
-| `t` | −100 a +100 | Soma 10 cents por unidade à curva de pitch. |
-| `B` | 0 a 100 | Move a aperiodicidade em direção a 0,95. |
-| `H` | 0 a 99 | Aplica corte logarítmico na envoltória, de Nyquist até 1 kHz. |
+| `g` | −100 a +100 | Altera o timbre sem mudar a nota. Valores negativos tendem a clarear; positivos, a escurecer. |
+| `t` | −100 a +100 | Desloca a curva de pitch em 10 cents por unidade. |
+| `B` | 0 a 100 | Aumenta a componente de sopro. |
+| `H` | 0 a 99 | Reduz progressivamente as frequências acima do corte. |
 
-Tokens desconhecidos são ignorados pelo motor e podem ser mantidos pelo
-aplicativo hospedeiro para diagnóstico ou compatibilidade.
+Exemplo: `g10B20H0` combina um ajuste de timbre com sopro leve. Flags que o motor
+não reconhece são ignoradas.
 
-## Pitch e WORLD
+## Como o executável conversa com os editores
 
-A ABI recebe PCM mono `f32`, taxa de amostragem, duração, parâmetros temporais,
-configuração WORLD, flags e pontos de pitch em cents. Cada ponto pode indicar
-interpolação suave, linear, ease-in, ease-out ou Hermite. O método de análise
-WORLD é Harvest ou DIO. Aplicativos que ofereçam outros trackers devem escolher
-um método WORLD compatível ao chamar esta biblioteca.
+O executável recebe os caminhos dos WAVs, a nota, duração, parâmetros temporais,
+flags e curva de pitch no formato clássico de resampler. Ele lê WAV PCM de 8, 16,
+24 ou 32 bits e WAV IEEE float de 32 bits, converte a entrada para mono e grava a
+saída em PCM de 16 bits. Os argumentos são fornecidos pelo editor; normalmente não
+é necessário executar o programa manualmente.
 
-## Integração com `oto.ini`
+O Tainah aplica nota, curva de pitch, duração, tempos de `oto.ini`, volume e as
+flags listadas acima. Os campos clássicos de velocidade, modulação e andamento são
+aceitos para manter a chamada compatível, mas ainda não alteram o áudio.
 
-O aplicativo hospedeiro resolve alias e carrega a amostra. Tainah recebe a
-região PCM e os valores temporais já resolvidos:
+O executável usa `oto.ini` indiretamente: o editor escolhe o alias e a amostra e
+envia os tempos da linha correspondente. O Tainah não instala voicebanks nem altera
+seus arquivos. A saída sem pitch, sem cobertura suficiente ou com falha de WORLD
+é reportada como erro para que o editor não trate silêncio como uma nota válida.
 
-- `offset` define o começo útil da amostra;
-- `cutoff` limita o final útil;
-- marcas de loop/sustain delimitam a região que pode ser estendida;
-- a marca de cauda preserva a parte final da amostra;
-- a duração solicitada determina o número exato de amostras de saída.
-
-Uma região curta demais ou sem cobertura WORLD suficiente retorna diagnóstico.
-
-## Compilação e testes
+## Compilar e testar
 
 ### Requisitos
 
 - Git com suporte a submódulos;
 - Python 3.9 ou posterior;
 - CMake 3.16 ou posterior;
-- compilador C++17;
-- CTest.
+- compilador C++17.
 
-### Compilar a biblioteca e executar CTest
-
-Na raiz do repositório:
+Na raiz do repositório, execute:
 
 ```sh
 python3 build.py
 ```
 
-O script obtém a revisão fixada da base de síntese, aplica os arquivos de
-integração mantidos neste repositório, compila a biblioteca e executa o teste
-de ABI. O artefato e os arquivos temporários são gravados em `build/`.
-
-Para indicar uma cópia local já preparada da base de síntese:
-
-```sh
-TAINAH_ENGINE_SOURCE=/caminho/para/a/base python3 build.py
-```
-
-Para executar somente o teste novamente após compilar:
+O script compila o executável e a biblioteca, executa o teste de ABI e prepara os
+arquivos em `build/package/`. Para rodar novamente o teste:
 
 ```sh
 ctest --test-dir build/engine-build -R tainah_abi --output-on-failure
 ```
 
-O artefato da plataforma é escrito em `build/package/`. Os nomes atuais são
-`lessampler_tainah.dll` no Windows, `liblessampler_tainah.dylib` no macOS e
-`liblessampler_tainah.so.1` no Linux.
+## Biblioteca para integrações
 
-## ABI C
+Além do executável, cada pacote inclui uma biblioteca compartilhada com ABI C
+versionada. O cabeçalho público está em `src/Tainah/tainah.h`. A chamada principal
+é `lt_render`: ela recebe PCM mono `f32`, taxa de amostragem, duração, tempos de
+`oto.ini`, flags e pontos de pitch; devolve PCM ou um diagnóstico. Consulte o
+cabeçalho para o contrato completo.
 
-O cabeçalho público está em `src/Tainah/tainah.h`. A versão atual é ABI 2. Os
-principais pontos de entrada são:
+## Sobre o nome
 
-- `lt_abi_version` e `lt_version` para identificar a biblioteca;
-- `lt_render` para renderizar e receber PCM ou diagnóstico;
-- `lt_pcm_free` para liberar a saída alocada pela biblioteca;
-- `lt_cache_clear_memory` para invalidar o cache em memória.
+O motor usa a grafia **Tainah**. No Brasil, a forma mais conhecida é **Tainá**,
+frequentemente associada a “estrela” ou “estrela da manhã”. Há também uma
+interpretação linguística diferente: o pesquisador Eduardo de Almeida Navarro,
+da USP, relaciona Taína, do Nheengatu, ao sentido de “criança”. Registramos as duas
+leituras porque a origem não tem uma única explicação consensual. A grafia Tainah
+é a identidade escolhida para este projeto.
 
-Estruturas públicas incluem `struct_size` para validação de compatibilidade.
-Consulte o cabeçalho para o contrato completo dos parâmetros e formatos.
+## Licença
 
-## Limites e estado
+O projeto é distribuído sob a licença LGPL-3.0-or-later. Consulte [`LICENSE`](LICENSE)
+e [`NOTICE.md`](NOTICE.md) para os termos e avisos de autoria.
 
-Tainah é destinado a hosts desktop que carregam uma biblioteca compartilhada.
-O repositório não instala voicebanks, não distribui amostras ou renders e não
-declara validação de qualidade perceptiva. A integração e os pacotes do
-Kamafeu são mantidos no repositório daquele aplicativo.
+## Leituras sobre o nome
 
-## Licença e avisos
-
-A biblioteca e as modificações cobertas são distribuídas sob LGPL-3.0-or-later.
-Consulte [`LICENSE`](LICENSE) e [`NOTICE.md`](NOTICE.md) para os avisos de
-copyright e a procedência dos arquivos incorporados.
-
-## Fontes sobre o nome
-
-- [Jornal da USP: entrevista com o linguista Eduardo de Almeida Navarro](https://jornal.usp.br/diversidade/etnico-racial/quais-sao-os-nomes-de-origem-indigena-mais-comuns-entre-os-brasileiros/)
-- [Artigo sobre o filme *A Amazônia de Tainá*, na revista Espaço Ameríndio](https://seer.ufrgs.br/EspacoAmerindio/article/view/58713)
+- [Jornal da USP: entrevista com Eduardo de Almeida Navarro](https://jornal.usp.br/diversidade/etnico-racial/quais-sao-os-nomes-de-origem-indigena-mais-comuns-entre-os-brasileiros/)
+- [Artigo na revista Espaço Ameríndio](https://seer.ufrgs.br/EspacoAmerindio/article/view/58713)

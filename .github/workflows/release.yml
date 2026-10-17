@@ -1,0 +1,85 @@
+name: Preparar versão do Tainah
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  pacotes:
+    name: Montar pacote para ${{ matrix.sistema }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - sistema: Windows
+            runner: windows-latest
+            sufixo: windows-x64
+          - sistema: macOS
+            runner: macos-latest
+            sufixo: macos-arm64
+          - sistema: Linux
+            runner: ubuntu-latest
+            sufixo: linux-x64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - name: Baixar o código desta versão
+        uses: actions/checkout@v4
+      - name: Preparar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - name: Compilar, testar e reunir os arquivos
+        run: python build.py --output build/package
+      - name: Compactar o pacote
+        shell: bash
+        run: python -c "import shutil; shutil.make_archive('Tainah-${{ matrix.sufixo }}', 'zip', 'build/package')"
+      - name: Guardar o pacote para publicação
+        uses: actions/upload-artifact@v4
+        with:
+          name: Tainah-${{ matrix.sufixo }}
+          path: Tainah-${{ matrix.sufixo }}.zip
+
+  publicar:
+    name: Publicar os downloads da versão
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: pacotes
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar os três pacotes
+        uses: actions/download-artifact@v4
+        with:
+          path: downloads
+          merge-multiple: true
+      - name: Criar a página da versão
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          cat > notas.md <<'EOF'
+          ## Tainah — motor vocal WORLD
+
+          Esta versão inclui o executável de resampling e a biblioteca necessária para usá-lo.
+          Os pacotes atendem ao Windows, macOS e Linux em arquitetura x64; o pacote do macOS
+          é gerado para Apple Silicon.
+
+          ### Instalação
+
+          Extraia o arquivo do seu sistema e escolha `Tainah.exe` no UTAU ou OpenUtau como
+          resampler. Mantenha o executável e a biblioteca na mesma pasta. O UTAU clássico
+          roda no Windows; os pacotes macOS e Linux são destinados ao OpenUtau.
+
+          ### O que há no pacote
+
+          - Executável `Tainah` compatível com os argumentos clássicos de resampler.
+          - Biblioteca compartilhada WORLD usada pelo executável.
+          - Texto da licença LGPL-3.0.
+
+          O motor entende as flags `g`, `t`, `B` e `H`. Consulte o README para os detalhes.
+          EOF
+          gh release create "$TAG" downloads/*.zip --title "Tainah $TAG" --notes-file notas.md
