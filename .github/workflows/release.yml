@@ -62,10 +62,10 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           cat > notas.md <<'EOF'
-          ## Tainah — motor vocal WORLD
+          ## Tainah: motor vocal WORLD
 
-          Esta versão inclui o executável de resampling e a biblioteca necessária para usá-lo.
-          Há pacotes para Windows x64, Linux x64 e macOS com Apple Silicon.
+          O pacote traz o executável e a biblioteca necessários para usar o Tainah.
+          Há versões para Windows x64, Linux x64 e macOS com Apple Silicon.
 
           ### Instalação
 
@@ -74,9 +74,9 @@ jobs:
           macOS e Linux, coloque `Tainah` na pasta de resamplers do OpenUtau. O UTAU clássico
           roda no Windows.
 
-          ### O que há no pacote
+          ### Arquivos incluídos
 
-          - Executável `Tainah` compatível com os argumentos clássicos de resampler.
+          - Executável `Tainah` compatível com os argumentos de resampler do UTAU.
           - Biblioteca compartilhada WORLD usada pelo executável.
           - Manifesto de expressões para as flags do OpenUtau.
           - Licenças e avisos de autoria.
