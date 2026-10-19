@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/tainah.png" alt="Ícone oficial do Tainah" width="192">
+</p>
+
 # Tainah
 
 **Resampler vocal com síntese WORLD para UTAU e OpenUtau.**
