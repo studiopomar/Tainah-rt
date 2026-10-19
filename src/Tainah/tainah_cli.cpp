@@ -84,6 +84,8 @@ int main(int argc,char **argv) {
             throw std::invalid_argument("volume, velocidade ou modulação inválida");
         lt_render_options o{}; o.struct_size=sizeof(o);o.sample_rate=rate;o.input=input.data();o.input_length=input.size();o.duration_ms=duration;o.offset_ms=offset;o.consonant_ms=consonant;o.cutoff_ms=cutoff;
         o.pitch_hz=440*std::pow(2.0,(note-69)/12.0);o.gender=flag_value(argv[5],'g');o.pitch_cents=flag_value(argv[5],'t')*10.0;o.breathiness=flag_value(argv[5],'B');
+        o.formant_shift=std::clamp(flag_value(argv[5],'P'),-100.0,100.0);
+        o.consonant_adjustment=std::clamp(flag_value(argv[5],'C'),-100.0,100.0);
         const double high=std::clamp(flag_value(argv[5],'H'),0.0,99.0), nyquist=rate/2.0;
         o.high_frequency_cutoff=high<=0.0||nyquist<=1000.0?0.0:nyquist*std::pow(1000.0/nyquist,high/99.0);
         o.frame_period_ms=5;o.f0_floor=55;o.f0_ceiling=1760;o.f0_method=1;

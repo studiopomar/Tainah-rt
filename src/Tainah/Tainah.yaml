@@ -36,3 +36,21 @@ expressions:
     default_value: 0
     is_flag: true
     flag: H
+  formant:
+    name: Deslocamento de formantes
+    abbr: formant
+    type: Numerical
+    min: -100
+    max: 100
+    default_value: 0
+    is_flag: true
+    flag: P
+  consonant:
+    name: Região consonantal fixa
+    abbr: consonant
+    type: Numerical
+    min: -100
+    max: 100
+    default_value: 0
+    is_flag: true
+    flag: C

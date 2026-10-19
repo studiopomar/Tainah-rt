@@ -30,6 +30,7 @@ int main() {
     options.struct_size = sizeof(options); options.sample_rate = 44100;
     options.input = sample.data(); options.input_length = sample.size();
     options.duration_ms = 1500; options.pitch_hz = 220;
+    options.consonant_ms = 100;
     options.frame_period_ms = 5; options.f0_floor = 71; options.f0_ceiling = 1760;
     options.f0_method = 1;
     assert(lt_render(&options, &output, &error) == 5 && error.code == 5);
@@ -49,6 +50,16 @@ int main() {
     assert(tail_energy > 1e-6); // the extra second must have WORLD coverage
     std::vector<float> baseline(output.samples, output.samples + output.length);
     lt_pcm_free(&output);
+    const uint32_t current_options_size = options.struct_size;
+    options.struct_size = static_cast<uint32_t>(offsetof(lt_render_options, consonant_adjustment));
+    assert(lt_render(&options, &output, &error) == 0);
+    for (size_t i = 0; i < output.length; ++i) assert(output.samples[i] == baseline[i]);
+    lt_pcm_free(&output);
+    options.struct_size = static_cast<uint32_t>(offsetof(lt_render_options, formant_shift));
+    assert(lt_render(&options, &output, &error) == 0);
+    for (size_t i = 0; i < output.length; ++i) assert(output.samples[i] == baseline[i]);
+    lt_pcm_free(&output);
+    options.struct_size = current_options_size;
     lt_cache_clear_memory(); // Read the serialized analysis on the next call.
     assert(lt_render(&options, &output, &error) == 0);
     assert(output.length == baseline.size());
@@ -85,6 +96,9 @@ int main() {
     variant = options; variant.pitch_cents = 100; differs(variant);
     variant = options; variant.breathiness = 50; differs(variant);
     variant = options; variant.high_frequency_cutoff = 3000; differs(variant);
+    variant = options; variant.formant_shift = 60; differs(variant);
+    variant = options; variant.consonant_adjustment = 100; differs(variant);
+    variant = options; variant.consonant_adjustment = -100; differs(variant);
     variant = options; variant.loop_start_ms = 70; variant.loop_end_ms = 350; variant.tail_start_ms = 450; differs(variant);
     variant = options; variant.f0_method = 2;
     const int dio_status = lt_render(&variant, &output, &error);

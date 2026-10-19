@@ -10,19 +10,26 @@ o pacote com OpenUtau.
 
 Os pacotes prontos para uso ficam na página [Versões](../../releases/latest):
 
-- **Windows x64:** `Tainah-windows-x64.zip`
-- **macOS Apple Silicon:** `Tainah-macos-arm64.zip`
-- **Linux x64:** `Tainah-linux-x64.zip`
+- **Windows x64:** `Tainah-LTS-windows-x64.zip`
+- **macOS Apple Silicon:** `Tainah-LTS-macos-arm64.zip`
+- **Linux x64:** `Tainah-LTS-linux-x64.zip`
 
 Extraia o ZIP do seu sistema e mantenha o executável e a biblioteca na mesma pasta.
 No Windows, selecione `Tainah.exe` nas configurações de resampler do UTAU ou do
 OpenUtau. No macOS e Linux, coloque `Tainah` na pasta de resamplers do OpenUtau e
-selecione-o no modo `CLASSIC`. O arquivo `Tainah.yaml` apresenta as quatro flags do
+selecione-o no modo `CLASSIC`. O arquivo `Tainah.yaml` apresenta as seis flags do
 motor no editor de expressões do OpenUtau.
 
 O macOS pode pedir autorização na primeira abertura, pois os pacotes não são
 assinados pela Apple. Se isso acontecer, abra **Ajustes do Sistema → Privacidade e
 Segurança** e permita a execução do Tainah.
+
+## Tainah-LTS
+
+**LTS** significa *Long Term Support* (suporte de longo prazo). O Tainah alcançou
+estabilidade e esta edição terá atualizações no repositório oficial até 2035.
+O nome Tainah-LTS identifica essa linha estável de manutenção; os pacotes continuam
+compatíveis com UTAU e OpenUtau conforme descrito neste README.
 
 ## Recursos
 
@@ -31,7 +38,14 @@ Segurança** e permita a execução do Tainah.
   de `oto.ini`.
 - Mantém o tamanho de saída pedido pelo aplicativo.
 - Lê a curva de pitch enviada pelo OpenUtau.
-- Oferece as flags `g`, `t`, `B` e `H`.
+- Oferece as flags `g`, `t`, `B`, `H`, `P` e `C`.
+- A flag `P` desloca os formantes sem alterar a nota: valores positivos elevam a
+  posição dos formantes e valores negativos a reduzem.
+- A flag `C` ajusta o tamanho da região consonantal fixa do `oto.ini`: `C0`
+  mantém o valor original, `C-100` desativa essa região e `C100` a duplica. Uma
+  região fixa maior reserva mais tempo da nota para o ataque e deixa menos tempo
+  elástico para a vogal. Marcadores de loop válidos definem a região fixa e
+  prevalecem sobre `C`.
 - Mostra um diagnóstico no terminal quando não consegue abrir, analisar ou
   sintetizar a amostra.
 
@@ -80,6 +94,8 @@ aceita pelo motor.
 | `t` | −100 a +100 | Desloca a curva de pitch em 10 cents por unidade. |
 | `B` | 0 a 100 | Aumenta a componente de sopro. |
 | `H` | 0 a 99 | Reduz progressivamente as frequências acima do corte. |
+| `P` | −100 a +100 | Desloca a posição dos formantes sem mudar o pitch fundamental. |
+| `C` | −100 a +100 | Ajusta a região consonantal fixa do `oto.ini`; `0` preserva o valor original. |
 
 Exemplo: `g10B20H0` combina um ajuste de timbre com sopro leve. Flags fora da lista
 são ignoradas.

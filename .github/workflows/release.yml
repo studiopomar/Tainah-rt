@@ -37,12 +37,12 @@ jobs:
         run: python build.py --output build/package
       - name: Compactar o pacote
         shell: bash
-        run: python -c "import shutil; shutil.make_archive('Tainah-${{ matrix.sufixo }}', 'zip', 'build/package')"
+        run: python -c "import shutil; shutil.make_archive('Tainah-LTS-${{ matrix.sufixo }}', 'zip', 'build/package')"
       - name: Guardar o pacote para publicação
         uses: actions/upload-artifact@v4
         with:
-          name: Tainah-${{ matrix.sufixo }}
-          path: Tainah-${{ matrix.sufixo }}.zip
+          name: Tainah-LTS-${{ matrix.sufixo }}
+          path: Tainah-LTS-${{ matrix.sufixo }}.zip
 
   publicar:
     name: Publicar os downloads da versão
@@ -62,7 +62,10 @@ jobs:
           TAG: ${{ github.ref_name }}
         run: |
           cat > notas.md <<'EOF'
-          ## Tainah: motor vocal WORLD
+          ## Tainah-LTS: motor vocal WORLD
+
+          LTS significa *Long Term Support* (suporte de longo prazo). Esta linha estável
+          terá atualizações no repositório oficial até 2035.
 
           O pacote traz o executável e a biblioteca necessários para usar o Tainah.
           Há versões para Windows x64, Linux x64 e macOS com Apple Silicon.
@@ -81,6 +84,6 @@ jobs:
           - Manifesto de expressões para as flags do OpenUtau.
           - Licenças e avisos de autoria.
 
-          O motor entende as flags `g`, `t`, `B` e `H`. Consulte o README para os detalhes.
+          O motor entende as flags `g`, `t`, `B`, `H`, `P` e `C`. Consulte o README para os detalhes.
           EOF
-          gh release create "$TAG" downloads/*.zip --title "Tainah $TAG" --notes-file notas.md
+          gh release create "$TAG" downloads/*.zip --title "Tainah-LTS $TAG" --notes-file notas.md
