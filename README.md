@@ -1,5 +1,6 @@
 <p align="center">
-  <img src="assets/tainah.png" alt="Ícone oficial do Tainah" width="192">
+  <img src="assets/tainah.png" alt="Ícone oficial do Tainah" width="192"><br>
+  Ícone por <a href="https://youtube.com/@satochi.p">Mori-P</a>
 </p>
 
 # Tainah
