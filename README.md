@@ -37,6 +37,38 @@ Segurança** e permita a execução do Tainah.
 
 Se a análise WORLD falhar, o Tainah retorna um erro.
 
+## Como o resampling funciona
+
+O Tainah usa análise e ressíntese WORLD. Primeiro, analisa o trecho selecionado
+do WAV e estima a frequência fundamental com Harvest ou DIO, o envelope espectral
+com CheapTrick e a aperiodicidade com D4C. Depois, remapeia esses dados para a
+duração pedida, aplica a nota e a curva de pitch, e sintetiza um novo áudio.
+
+O tempo é tratado em regiões. Com espaço suficiente, o ataque e a cauda mantêm
+suas durações, e o ajuste de duração se concentra na região sustentada. Se a nota
+for curta demais para acomodar essas regiões, ataque e cauda são comprimidos para
+caber. Marcadores de loop definem a região sustentada e o marcador de cauda
+orienta a parte final. Os valores de `offset`, `consonant` e `cutoff` de `oto.ini`
+afetam quais partes da gravação são usadas. O argumento clássico de velocidade é
+aceito para compatibilidade, mas atualmente não altera o áudio.
+
+Outros resamplers podem trabalhar diretamente com trechos da onda, alinhando e
+sobrepondo segmentos, usar processamento síncrono com o pitch ou combinar métodos.
+Essas abordagens e o WORLD têm características diferentes, sem uma técnica que
+seja melhor para todos os bancos e frases.
+
+| Aspecto | Tainah com WORLD | Métodos de sobreposição ou síncronos com o pitch |
+| --- | --- | --- |
+| Operação | Analisa pitch, envelope espectral e aperiodicidade, depois ressintetiza o áudio | Seleciona, alinha, sobrepõe ou repete partes da onda original; o comportamento depende do motor |
+| Pitch e duração | Ajustados nos dados da análise antes da síntese | Normalmente tratados pela seleção e sobreposição de segmentos ou pelo alinhamento ao pitch |
+| Consoantes | Usa a região fixa de consoante e marcadores opcionais de loop e cauda | Dependem das regras de segmentação e dos dados `oto.ini` |
+| Característica | Permite remodelar pitch e duração pelo modelo acústico, mas a análise e a síntese também podem alterar a textura da gravação | Pode manter mais características da onda original; mudanças grandes ou segmentos mal alinhados podem evidenciar repetição e artefatos de transição |
+
+Esta comparação descreve famílias de técnicas, não uma classificação de qualidade.
+O resultado depende da gravação, do `oto.ini`, dos ajustes de pitch e duração e
+da implementação de cada motor. WORLD não garante naturalidade, assim como os
+métodos que trabalham com a onda original não são automaticamente mais precisos.
+
 ## Flags
 
 As letras diferenciam maiúsculas de minúsculas. Os valores são limitados à faixa
@@ -96,6 +128,23 @@ versionada. O cabeçalho público está em `src/Tainah/tainah.h`. A chamada prin
 é `lt_render`: ela recebe PCM mono `f32`, taxa de amostragem, duração, tempos de
 `oto.ini`, flags e pontos de pitch; devolve PCM ou um diagnóstico. Consulte o
 cabeçalho para o contrato completo.
+
+### Cache de análise
+
+O Tainah guarda análises WORLD em cache para evitar repetir esse processamento
+quando a mesma amostra e as mesmas configurações de análise forem usadas de novo.
+Esses arquivos são dados temporários de análise, não arquivos `.frq`, não alteram
+o WAV de origem nem o voicebank e podem ser regenerados se estiverem ausentes ou
+inválidos.
+
+Por padrão, o cache fica nestes diretórios:
+
+- **Windows:** `%LOCALAPPDATA%\Kamafeu\tainah-analysis`
+- **macOS:** `~/Library/Caches/Kamafeu/tainah-analysis`
+- **Linux:** `$XDG_CACHE_HOME/kamafeu/tainah-analysis` ou
+  `~/.cache/kamafeu/tainah-analysis`
+
+Defina `TAINAH_ANALYSIS_CACHE_DIR` para usar outro diretório.
 
 ## Sobre o nome
 
