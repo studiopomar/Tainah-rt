@@ -1,4 +1,5 @@
 #include "tainah.h"
+#include "tainah_timing.h"
 #include "AudioModel/AudioModel.h"
 #include "AudioModel/Synthesis/Synthesis.h"
 #include <algorithm>
@@ -163,35 +164,11 @@ double pitch_cents(const lt_render_options *o, double time) {
     }
     return p[o->pitch_point_count-1].cents;
 }
-double source_time(const lt_render_options *o, double time, double source_duration) {
-    const double marked_begin = o->loop_start_ms - o->offset_ms;
-    const double marked_end = o->loop_end_ms - o->offset_ms;
-    const double tail = o->tail_start_ms - o->offset_ms;
-    const bool valid_loop = std::isfinite(marked_begin) && std::isfinite(marked_end) &&
-        marked_begin >= 0 && marked_end > marked_begin && marked_end <= source_duration;
-    const bool has_consonant_adjustment = o->struct_size >=
-        offsetof(lt_render_options, consonant_adjustment) + sizeof(o->consonant_adjustment);
-    const double consonant_ratio = has_consonant_adjustment ? 1.0 + o->consonant_adjustment / 100.0 : 1.0;
-    const double begin = valid_loop ? marked_begin :
-        std::clamp(o->consonant_ms * consonant_ratio, 0.0, source_duration);
-    const double end = valid_loop ? marked_end :
-        (std::isfinite(tail) && tail > begin && tail <= source_duration ? tail : source_duration);
-    if (end <= begin) return std::clamp(time * source_duration / o->duration_ms, 0.0, source_duration);
-    const double tail_begin = std::isfinite(tail) && tail >= end && tail <= source_duration ? tail : source_duration;
-    const double attack = begin;
-    const double release = source_duration - tail_begin;
-    const double scale = std::min(1.0, o->duration_ms / std::max(attack + release, 1e-9));
-    const double target_attack = attack * scale;
-    const double target_tail = o->duration_ms - release * scale;
-    if (time < target_attack) return std::clamp(time / scale, 0.0, source_duration);
-    if (time >= target_tail) return std::clamp(tail_begin + (time - target_tail) / scale, 0.0, source_duration);
-    return std::clamp(begin + (time - target_attack) * (end - begin) /
-        std::max(target_tail - target_attack, 1e-9), 0.0, source_duration);
-}
 }
 extern "C" {
 uint32_t lt_abi_version(void) { return LT_ABI_VERSION; }
-const char *lt_version(void) { return "tainah-rt/2.1.0-world"; }
+const char *lt_version(void) { return "tainah-rt/2.2.1-world-timing1"; }
+uint32_t lt_render_options_size(void) { return sizeof(lt_render_options); }
 void lt_pcm_free(lt_pcm *pcm) {
     if (!pcm || pcm->struct_size < sizeof(lt_pcm)) return;
     delete[] pcm->samples;
@@ -211,12 +188,17 @@ int32_t lt_render(const lt_render_options *o, lt_pcm *out, lt_error *error) {
     const bool has_consonant_adjustment = o && o->struct_size >=
         offsetof(lt_render_options, consonant_adjustment) + sizeof(o->consonant_adjustment);
     const double consonant_adjustment = has_consonant_adjustment ? o->consonant_adjustment : 0.0;
+    const bool has_target = o && o->struct_size >=
+        offsetof(lt_render_options, has_target_consonant) + sizeof(o->has_target_consonant) &&
+        o->has_target_consonant != 0;
+    const double target_consonant = has_target ? o->target_consonant_ms : 0.0;
     if (!o || o->struct_size < base_options_size || !o->input || o->input_length < 64 ||
         o->input_length > INT32_MAX || o->sample_rate < 8000 || o->sample_rate > 192000 ||
         !std::isfinite(o->duration_ms) || o->duration_ms <= 0 || o->duration_ms > 600000 ||
         !std::isfinite(o->offset_ms) || !std::isfinite(o->consonant_ms) || !std::isfinite(o->cutoff_ms) ||
         !std::isfinite(o->pitch_hz) || o->pitch_hz <= 0 || !std::isfinite(o->gender) ||
         !std::isfinite(o->pitch_cents) || !std::isfinite(o->breathiness) ||
+        !std::isfinite(target_consonant) || target_consonant < 0 ||
         !std::isfinite(formant_shift) ||
         formant_shift < -100.0 || formant_shift > 100.0 ||
         !std::isfinite(consonant_adjustment) ||
@@ -244,11 +226,12 @@ int32_t lt_render(const lt_render_options *o, lt_pcm *out, lt_error *error) {
         const size_t end = o->cutoff_ms > 0 ? o->input_length - std::min<uint64_t>(o->input_length, static_cast<uint64_t>(o->cutoff_ms * o->sample_rate / 1000.0)) :
             o->cutoff_ms < 0 ? std::min<uint64_t>(o->input_length, start + static_cast<uint64_t>(-o->cutoff_ms * o->sample_rate / 1000.0)) : o->input_length;
         if (end <= start || end - start < 64) { fail(error, 3, "oto.ini source region has insufficient coverage"); return 3; }
-        const float *source = o->input + start;
         const size_t source_length = end - start;
         uint64_t key = 14695981039346656037ull;
         key = hash_bytes(key, lt_version(), std::strlen(lt_version()));
-        key = hash_bytes(key, source, source_length * sizeof(float));
+        // Like lessampler, analyze the complete recording so Harvest/D4C
+        // retain context around oto.ini cuts. Aliases share the same analysis.
+        key = hash_bytes(key, o->input, o->input_length * sizeof(float));
         key = hash_bytes(key, &o->sample_rate, sizeof(o->sample_rate));
         key = hash_bytes(key, &o->frame_period_ms, sizeof(double));
         key = hash_bytes(key, &o->f0_floor, sizeof(double));
@@ -258,7 +241,7 @@ int32_t lt_render(const lt_render_options *o, lt_pcm *out, lt_error *error) {
         { std::lock_guard<std::mutex> lock(cache_mutex); auto it = analysis_cache.find(key); if (it != analysis_cache.end()) cached = it->second; }
         if (!cached) cached = load_analysis(key, o->sample_rate, o->frame_period_ms);
         if (!cached) {
-            std::vector<double> input(source, source + source_length);
+            std::vector<double> input(o->input, o->input + o->input_length);
             lessConfigure config;
             config.audio_model_frame_period = o->frame_period_ms;
             config.f0_dio_floor = o->f0_floor;
@@ -292,12 +275,14 @@ int32_t lt_render(const lt_render_options *o, lt_pcm *out, lt_error *error) {
         for (size_t i = 0; i < frames; ++i) {
             if (cancelled(o)) { fail(error, 2, "render cancelled"); return 2; }
             const double time = std::min(o->duration_ms, i * render.frame_period);
-            const double mapped = source_time(o, time, source_duration);
-            const double pos = std::clamp(mapped / render.frame_period, 0.0, double(cached->f0.size() - 1));
+            const double mapped = tainah::source_time(o, time, source_duration);
+            const double pos = std::clamp((start * 1000.0 / o->sample_rate + mapped) / render.frame_period, 0.0, double(cached->f0.size() - 1));
             const size_t left = static_cast<size_t>(pos);
             const size_t right = std::min(left + 1, cached->f0.size() - 1);
             const double f = pos - left;
-            const double source_f0 = cached->f0[left] * (1 - f) + cached->f0[right] * f;
+            // Match lessampler: interpolation must not voice an unvoiced
+            // consonant merely because the following frame has an F0.
+            const double source_f0 = cached->f0[left];
             const double target_f0 = o->pitch_hz * std::pow(2.0, (pitch_cents(o, time) + o->pitch_cents) / 1200.0);
             render.f0.push_back(source_f0 > 0 ? std::clamp(target_f0, o->f0_floor, o->f0_ceiling) : 0.0);
             render.spectrogram.emplace_back(render.w_length);
@@ -317,7 +302,7 @@ int32_t lt_render(const lt_render_options *o, lt_pcm *out, lt_error *error) {
                 const double high_cut = o->high_frequency_cutoff > 0 && hz > o->high_frequency_cutoff ?
                     std::exp(-6.0 * (hz - o->high_frequency_cutoff) / o->sample_rate) : 1.0;
                 render.spectrogram.back()[bin] = std::max(0.0, spectrum * tilt * high_cut);
-                const double ap = cached->aperiodicity[left][bin] * (1-f) + cached->aperiodicity[right][bin] * f;
+                const double ap = cached->aperiodicity[f > 0.5 ? right : left][bin];
                 const double breath = std::clamp(o->breathiness / 100.0, 0.0, 0.95);
                 render.aperiodicity.back()[bin] = std::clamp(ap + breath * (1.0 - ap), 0.0, 1.0);
             }

@@ -46,7 +46,7 @@ expressions:
     is_flag: true
     flag: P
   consonant:
-    name: Região consonantal fixa
+    name: Duração da consoante
     abbr: consonant
     type: Numerical
     min: -100

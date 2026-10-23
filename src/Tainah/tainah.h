@@ -55,6 +55,9 @@ typedef struct lt_render_options {
     double formant_shift;
     /* Optional ABI v2 extension: fixed consonant adjustment, -100 to +100; default 0. */
     double consonant_adjustment;
+    /* Optional ABI v2 timing extension. Zero-initialized callers retain source timing. */
+    double target_consonant_ms; /* Output fixed-region length, before flag C. */
+    uint32_t has_target_consonant; /* 1 enables target_consonant_ms, including zero. */
 } lt_render_options;
 typedef struct lt_pcm {
     uint32_t struct_size;
@@ -64,6 +67,8 @@ typedef struct lt_pcm {
 } lt_pcm;
 LT_API uint32_t lt_abi_version(void);
 LT_API const char *lt_version(void);
+/* Largest options structure understood by this library. */
+LT_API uint32_t lt_render_options_size(void);
 LT_API int32_t lt_render(const lt_render_options *options, lt_pcm *output, lt_error *error);
 LT_API void lt_pcm_free(lt_pcm *pcm);
 LT_API void lt_cache_clear_memory(void);

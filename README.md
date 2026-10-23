@@ -183,3 +183,11 @@ e [`NOTICE.md`](NOTICE.md) para os termos e avisos de autoria.
 
 - [Jornal da USP: entrevista com Eduardo de Almeida Navarro](https://jornal.usp.br/diversidade/etnico-racial/quais-sao-os-nomes-de-origem-indigena-mais-comuns-entre-os-brasileiros/)
 - [Artigo na revista Espaço Ameríndio](https://seer.ufrgs.br/EspacoAmerindio/article/view/58713)
+
+## Correções de tempo do Tainah 2.2.1
+
+O adaptador preserva o limite de consoante do `oto.ini` e ajusta sua duração na saída pela velocidade. O mapa de vogais segue `AudioProcess::TimeStretch` do lessampler-ng: notas curtas usam apenas a parte necessária da gravação. O WORLD analisa o WAV completo para preservar o contexto dos cortes. A CLI usa o andamento recebido para posicionar a curva de pitch em intervalos de cinco ticks musicais.
+
+A ABI continua na versão 2. Os campos opcionais `target_consonant_ms` e `has_target_consonant`, acrescentados ao final da estrutura, permitem controlar o tempo sem alterar os campos anteriores. `lt_render_options_size()` permite ao host verificar esse suporte. A flag `C` ajusta a duração de saída, sem mover o limite original da consoante.
+
+O build executa testes de ABI, casos matemáticos comparados às equações do lessampler e 16 comparações de áudio entre CLI e biblioteca. A aprovação auditiva e a validação de cada host devem ser registradas separadamente.

@@ -80,16 +80,24 @@ int main(int argc,char **argv) {
         int note=note_number(argv[3]); if(note<0){std::cerr<<"Nota inválida: "<<argv[3]<<"\n";return 2;}
         double velocity=std::stod(argv[4]), offset=std::stod(argv[6]), duration=std::stod(argv[7]);
         double consonant=std::stod(argv[8]), cutoff=std::stod(argv[9]), volume=std::stod(argv[10]), modulation=std::stod(argv[11]);
+        std::string tempo_arg = argv[12];
+        if (!tempo_arg.empty() && tempo_arg.front() == '!') tempo_arg.erase(0, 1);
+        size_t tempo_end = 0;
+        const double tempo = std::stod(tempo_arg, &tempo_end);
+        if (tempo_end != tempo_arg.size() || !std::isfinite(tempo) || tempo <= 0)
+            throw std::invalid_argument("andamento inválido");
         if (!std::isfinite(velocity) || !std::isfinite(modulation) || !std::isfinite(volume))
             throw std::invalid_argument("volume, velocidade ou modulação inválida");
         lt_render_options o{}; o.struct_size=sizeof(o);o.sample_rate=rate;o.input=input.data();o.input_length=input.size();o.duration_ms=duration;o.offset_ms=offset;o.consonant_ms=consonant;o.cutoff_ms=cutoff;
+        o.has_target_consonant=1;
+        o.target_consonant_ms=std::max(0.0,consonant)*std::pow(2.0,1.0-std::clamp(velocity,-100.0,200.0)/100.0);
         o.pitch_hz=440*std::pow(2.0,(note-69)/12.0);o.gender=flag_value(argv[5],'g');o.pitch_cents=flag_value(argv[5],'t')*10.0;o.breathiness=flag_value(argv[5],'B');
         o.formant_shift=std::clamp(flag_value(argv[5],'P'),-100.0,100.0);
         o.consonant_adjustment=std::clamp(flag_value(argv[5],'C'),-100.0,100.0);
         const double high=std::clamp(flag_value(argv[5],'H'),0.0,99.0), nyquist=rate/2.0;
         o.high_frequency_cutoff=high<=0.0||nyquist<=1000.0?0.0:nyquist*std::pow(1000.0/nyquist,high/99.0);
         o.frame_period_ms=5;o.f0_floor=55;o.f0_ceiling=1760;o.f0_method=1;
-        if(argc>13){auto curve=decode_pitch(argv[13]); static std::vector<lt_pitch_point> points; for(size_t i=0;i<curve.size();++i)points.push_back({double(i*5),curve[i],1}); o.pitch_points=points.data();o.pitch_point_count=uint32_t(points.size());}
+        if(argc>13){auto curve=decode_pitch(argv[13]); static std::vector<lt_pitch_point> points; for(size_t i=0;i<curve.size();++i)points.push_back({double(i)*60000.0*5.0/(tempo*480.0),curve[i],1}); o.pitch_points=points.data();o.pitch_point_count=uint32_t(points.size());}
         lt_pcm pcm{};pcm.struct_size=sizeof(pcm);lt_error error{};error.struct_size=sizeof(error);
         int status=lt_render(&o,&pcm,&error);if(status){std::cerr<<"Falha ao renderizar: "<<error.message<<"\n";return status;}
         const double gain=std::clamp(volume/100.0,0.0,4.0);
