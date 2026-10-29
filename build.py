@@ -52,11 +52,15 @@ def main():
     destination.mkdir(exist_ok=True)
     for name in ("tainah.h", "tainah_timing.h", "tainah_timing_test.cpp", "tainah.cpp", "tainah_cli.cpp", "tainah_abi_test.cpp", "CMakeLists.txt"):
         shutil.copy2(adapter_source / name, destination / name)
-    shutil.copy2(ROOT / "patches" / "TainahConfig.h", engine / "src" / "ConfigUnit" / "lessConfigure.h")
-    shutil.copy2(
-        ROOT / "patches" / "WorldModule.cpp",
-        engine / "src" / "AudioModel" / "WorldModule" / "WorldModule.cpp",
-    )
+    tainah_config = ROOT / "patches" / "TainahConfig.h"
+    if tainah_config.exists():
+        shutil.copy2(tainah_config, engine / "src" / "ConfigUnit" / "lessConfigure.h")
+    world_module = ROOT / "patches" / "WorldModule.cpp"
+    if world_module.exists():
+        shutil.copy2(
+            world_module,
+            engine / "src" / "AudioModel" / "WorldModule" / "WorldModule.cpp",
+        )
 
     cmake_file = engine / "CMakeLists.txt"
     cmake_text = cmake_file.read_text(encoding="utf-8")

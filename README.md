@@ -191,3 +191,15 @@ O adaptador preserva o limite de consoante do `oto.ini` e ajusta sua duração n
 A ABI continua na versão 2. Os campos opcionais `target_consonant_ms` e `has_target_consonant`, acrescentados ao final da estrutura, permitem controlar o tempo sem alterar os campos anteriores. `lt_render_options_size()` permite ao host verificar esse suporte. A flag `C` ajusta a duração de saída, sem mover o limite original da consoante.
 
 O build executa testes de ABI, casos matemáticos comparados às equações do lessampler e 16 comparações de áudio entre CLI e biblioteca. A aprovação auditiva e a validação de cada host devem ser registradas separadamente.
+
+## Novidades do Tainah 2.3.0
+
+O Tainah 2.3.0 expande a síntese acústica com controle e transição contínua de formantes de vogais por nota, mantendo retrocompatibilidade total com a ABI v2:
+
+- **Distorção e mapeamento de formantes ($F_1, F_2, F_3$):** suporte a razões de frequência independentes (`f1_ratio`, `f2_ratio`, `f3_ratio`) relativas aos formantes intrínsecos analisados na vogal de origem. O espectro WORLD é deformado suavemente ao longo de 6 âncoras no eixo de frequência, mantendo harmônicos acima de $F_4$ ancorados.
+- **Transição em Curva-S Antecipada:** glissando contínuo de formantes baseado em cosseno elevado (raised-cosine) iniciado antecipadamente dentro da zona de coarticulação consoante-vogal ($0{,}35 \cdot C$), eliminando estalos e degraus tímbricos.
+- **Acoplamento de Nasalidade Acústica:** modelagem de vogais nasais (como no padrão BRAPA) com polo nasal de baixa frequência em ~270 Hz, notch anti-formante em $1{,}38 \cdot F_1$ e amortecimento da largura de banda de $F_1$.
+- **R Rótico / Retroflexo (`[ɚ]` do inglês e R caipira):** atenuação e aproximação de $F_3$ em direção a $F_2$ (~1650–1750 Hz, `f3_ratio < 0.88`), simulação de cavidade sublingual com anti-ressonância logo acima de $F_3$ e reforço do cluster $F_2\text{--}F_3$.
+- **Formante do Cantor:** reforço harmônico na faixa de projeção acústica (~3000 Hz, $\pm 250$ Hz).
+- **API `lt_analyze_formants`:** nova função exportada para análise rápida e detecção precisa de $F_0$, $F_1$, $F_2$, $F_3$ via interpolação quadrática e extração do envelope espectral logarítmico em 128 pontos (`LT_FORMANT_ENVELOPE_POINTS`).
+

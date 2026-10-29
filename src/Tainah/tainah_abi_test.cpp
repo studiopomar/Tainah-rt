@@ -59,6 +59,8 @@ int main() {
     assert(tail_energy > 1e-6); // the extra second must have WORLD coverage
     std::vector<float> baseline(output.samples, output.samples + output.length);
     lt_pcm_free(&output);
+
+    // Backward-compatibility: callers passing earlier struct sizes must render bit-identical PCM.
     const uint32_t current_options_size = options.struct_size;
     options.struct_size = static_cast<uint32_t>(offsetof(lt_render_options, target_consonant_ms));
     assert(lt_render(&options, &output, &error) == 0);
@@ -72,7 +74,16 @@ int main() {
     assert(lt_render(&options, &output, &error) == 0);
     for (size_t i = 0; i < output.length; ++i) assert(output.samples[i] == baseline[i]);
     lt_pcm_free(&output);
+    options.struct_size = static_cast<uint32_t>(offsetof(lt_render_options, f1_ratio));
+    assert(lt_render(&options, &output, &error) == 0);
+    for (size_t i = 0; i < output.length; ++i) assert(output.samples[i] == baseline[i]);
+    lt_pcm_free(&output);
+    options.struct_size = static_cast<uint32_t>(offsetof(lt_render_options, f3_ratio));
+    assert(lt_render(&options, &output, &error) == 0);
+    for (size_t i = 0; i < output.length; ++i) assert(output.samples[i] == baseline[i]);
+    lt_pcm_free(&output);
     options.struct_size = current_options_size;
+
     lt_cache_clear_memory(); // Read the serialized analysis on the next call.
     assert(lt_render(&options, &output, &error) == 0);
     assert(output.length == baseline.size());
@@ -134,6 +145,34 @@ int main() {
     variant = options; variant.consonant_adjustment = 100; differs(variant);
     variant = options; variant.consonant_adjustment = -100; differs(variant);
     variant = options; variant.loop_start_ms = 70; variant.loop_end_ms = 350; variant.tail_start_ms = 450; differs(variant);
+
+    // Vowel formant warp: neutral ratios are bit-identical to baseline.
+    variant = options; variant.has_vowel_formant = 1; variant.f1_ratio = 1.0; variant.f2_ratio = 1.0;
+    assert(lt_render(&variant, &output, &error) == 0);
+    assert(output.length == baseline.size());
+    for (size_t i = 0; i < output.length; ++i) assert(output.samples[i] == baseline[i]);
+    lt_pcm_free(&output);
+
+    // Formant movements change PCM.
+    variant.f1_ratio = 0.7; variant.f2_ratio = 1.4; differs(variant);
+    variant = options; variant.has_vowel_formant = 1; variant.f1_ratio = 1.0; variant.f2_ratio = 1.0;
+    variant.f3_ratio = 0.68; differs(variant);
+    variant = options; variant.has_vowel_formant = 1; variant.f1_ratio = 1.0; variant.f2_ratio = 1.0;
+    variant.nasality = 0.85; differs(variant);
+    variant = options; variant.has_vowel_formant = 1; variant.f1_ratio = 1.0; variant.f2_ratio = 1.0;
+    variant.singers_formant = 0.75; differs(variant);
+
+    // Out of range validation.
+    variant.f1_ratio = 3.0;
+    assert(lt_render(&variant, &output, &error) == 1 && error.code == 1);
+
+    // Formant extraction API verification.
+    lt_formant_analysis analysis{}; analysis.struct_size = sizeof(analysis);
+    assert(lt_analyze_formants(&options, &analysis, &error) == 0);
+    assert(analysis.f0_hz > 200 && analysis.f0_hz < 240);
+    assert(analysis.f1_hz > 0 && analysis.f1_hz < analysis.f2_hz && analysis.f2_hz < analysis.f3_hz);
+    assert(analysis.envelope_len == LT_FORMANT_ENVELOPE_POINTS && analysis.envelope_max_hz > 0);
+
     variant = options; variant.f0_method = 2;
     const int dio_status = lt_render(&variant, &output, &error);
     // A detector may reject a synthetic fixture, but must report invalid PCM
