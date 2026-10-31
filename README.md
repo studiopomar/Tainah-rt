@@ -91,19 +91,34 @@ métodos que trabalham com a onda original não são automaticamente mais precis
 ## Flags
 
 As letras diferenciam maiúsculas de minúsculas. Os valores são limitados à faixa
-aceita pelo motor.
+aceita pelo motor. As expressões correspondentes no OpenUtau constam em `Tainah.yaml`.
 
-| Flag | Faixa | Efeito |
-| --- | ---: | --- |
-| `g` | −100 a +100 | Altera o timbre sem mudar a nota. Valores negativos tendem a clarear; positivos, a escurecer. |
-| `t` | −100 a +100 | Desloca a curva de pitch em 10 cents por unidade. |
-| `B` | 0 a 100 | Aumenta a componente de sopro. |
-| `H` | 0 a 99 | Reduz progressivamente as frequências acima do corte. |
-| `P` | −100 a +100 | Desloca a posição dos formantes sem mudar o pitch fundamental. |
-| `C` | −100 a +100 | Ajusta a região consonantal fixa do `oto.ini`; `0` preserva o valor original. |
+| Flag | Expressão OpenUtau | Faixa | Efeito |
+| :---: | :---: | ---: | --- |
+| `g` | `gen` | −100 a +100 | Altera o timbre sem mudar a nota. Valores negativos tendem a clarear; positivos, a escurecer. |
+| `t` | `pit` | −100 a +100 | Desloca a curva de pitch em 10 cents por unidade. |
+| `B` | `bre` | 0 a 100 | Aumenta a componente geral de sopro (ruído aperiódico amplo). |
+| `H` | `hfc` | 0 a 99 | Reduz progressivamente as frequências acima do corte. |
+| `P` | `formant` | −100 a +100 | Desloca a posição global dos formantes sem mudar o pitch fundamental. |
+| `C` | `consonant` | −100 a +100 | Ajusta a região consonantal fixa do `oto.ini`; `0` preserva o valor original. |
+| `N` | `nas` | 0 a 100 | Acoplamento de nasalidade acústica (polo em 270 Hz, anti-formante e amortecimento de F1). |
+| `S` | `sig` | −100 a +100 | Formante do cantor: reforço de projeção em ~3000 Hz (+ ring/brilho; - voz aveludada). |
+| `R` | `rho` | 0 a 100 | Rótico / retroflexo: aproxima F3 de F2 com anti-ressonância sublingual (R caipira / er inglês). |
+| `V` | `vop` | −100 a +100 | Abertura vocálica (F1 / mandíbula): positivo abre a vogal; negativo fecha a vogal. |
+| `D` | `vfr` | −100 a +100 | Anterioridade vocálica (F2 / língua): positivo anterioriza/brilha; negativo escurece. |
+| `T` | `tns` | −100 a +100 | Tensão vocal e adução glótica: balanço H1-H2 (+ canto tenso/belting; - fonação laxa/suave). |
+| `A` | `air` | 0 a 100 | Arezamento (Air): difusão aperiódica aveludada seletiva acima de 3,5 kHz (estilo pop/condensador). |
+| `W` | `wrm` | −100 a +100 | Calor acústico: ressonância corporal de peito em ~220 Hz (+ corpo/peso; - atenua embolamento). |
+| `E` | `edg` | −100 a +100 | Punch de ataque da consoante: modela a micro-dinâmica inicial de plosivas e transientes. |
+| `M` | `mod` | 0 a 100 | Modulação de vibrato: percentual de preservação do vibrato/flutuação natural da gravação original. |
+| `d` | `f0m` | 0 ou 1 | Método de F0: `d0` para Harvest (máxima precisão); `d1` para DIO (alternativa rápida). |
+| `s` | `ses` | 0 a 100 | De-Esser inteligente: suprime dinamicamente frequências sibilantes ásperas (5–9,5 kHz) em consoantes. |
+| `G` | `gwl` | 0 a 100 | Growl e Vocal Fry: modulação caótica de sub-harmônicos (F0/2) para canto gutural e rock. |
+| `U` | `sat` | −100 a +100 | Saturação glotal / Drive: modelagem analógica tanh (+ calor harmônico; - linearidade suave). |
+| `J` | `jit` | 0 a 100 | Humanização (Jitter/Shimmer): micro-flutuações fisiológicas involuntárias de afinação e dinâmica. |
+| `K` | `kee` | −100 a +100 | Escala laringeal adaptativa: compensação anatômica biológica de formantes em saltos de oitava. |
 
-Exemplo: `g10B20H0` combina um ajuste de timbre com sopro leve. Flags fora da lista
-são ignoradas.
+Exemplo: `g10T25A30S20W15N40s35G20U15J25K10` combina tensão de belting, arezamento aveludado, de-esser, growl leve, saturação analógica e humanização fisiológica. Flags fora da lista são ignoradas.
 
 ## Como o executável conversa com os editores
 
