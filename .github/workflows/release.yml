@@ -84,6 +84,6 @@ jobs:
           - Manifesto de expressões para as flags do OpenUtau.
           - Licenças e avisos de autoria.
 
-          O motor entende as flags `g`, `t`, `B`, `H`, `P` e `C`. Consulte o README para os detalhes.
+          O pacote inclui 22 flags para ajustar timbre, pitch, formantes, articulação e outros aspectos acústicos. Consulte o README e o manifesto `Tainah.yaml` incluído no pacote.
           EOF
           gh release create "$TAG" downloads/*.zip --title "Tainah-LTS $TAG" --notes-file notas.md

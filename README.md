@@ -22,7 +22,7 @@ Os pacotes prontos para uso ficam na página [Versões](../../releases/latest):
 Extraia o ZIP do seu sistema e mantenha o executável e a biblioteca na mesma pasta.
 No Windows, selecione `Tainah.exe` nas configurações de resampler do UTAU ou do
 OpenUtau. No macOS e Linux, coloque `Tainah` na pasta de resamplers do OpenUtau e
-selecione-o no modo `CLASSIC`. O arquivo `Tainah.yaml` apresenta as seis flags do
+selecione-o no modo `CLASSIC`. O arquivo `Tainah.yaml` apresenta as flags do
 motor no editor de expressões do OpenUtau.
 
 O macOS pode pedir autorização na primeira abertura, pois os pacotes não são
@@ -43,7 +43,9 @@ compatíveis com UTAU e OpenUtau conforme descrito neste README.
   de `oto.ini`.
 - Mantém o tamanho de saída pedido pelo aplicativo.
 - Lê a curva de pitch enviada pelo OpenUtau.
-- Oferece as flags `g`, `t`, `B`, `H`, `P` e `C`.
+- Oferece 22 flags para ajustar timbre, pitch, sopro, formantes, articulação e
+  outros aspectos acústicos. Consulte o manifesto `Tainah.yaml` no pacote para
+  ver os controles disponíveis no OpenUtau.
 - A flag `P` desloca os formantes sem alterar a nota: valores positivos elevam a
   posição dos formantes e valores negativos a reduzem.
 - A flag `C` ajusta o tamanho da região consonantal fixa do `oto.ini`: `C0`
@@ -207,9 +209,12 @@ A ABI continua na versão 2. Os campos opcionais `target_consonant_ms` e `has_ta
 
 O build executa testes de ABI, casos matemáticos comparados às equações do lessampler e 16 comparações de áudio entre CLI e biblioteca. A aprovação auditiva e a validação de cada host devem ser registradas separadamente.
 
-## Novidades do Tainah 2.3.0
+## Novidades do Tainah 3.0.1
 
-O Tainah 2.3.0 expande a síntese acústica com controle e transição contínua de formantes de vogais por nota, mantendo retrocompatibilidade total com a ABI v2:
+O Tainah 3.0.1 reúne os controles de formantes introduzidos na versão 2.3.0 e
+amplia o manifesto do OpenUtau com 16 novos controles acústicos. A ABI permanece
+na versão 2, com os novos campos adicionados ao final da estrutura para manter a
+compatibilidade com hosts existentes.
 
 - **Distorção e mapeamento de formantes ($F_1, F_2, F_3$):** suporte a razões de frequência independentes (`f1_ratio`, `f2_ratio`, `f3_ratio`) relativas aos formantes intrínsecos analisados na vogal de origem. O espectro WORLD é deformado suavemente ao longo de 6 âncoras no eixo de frequência, mantendo harmônicos acima de $F_4$ ancorados.
 - **Transição em Curva-S Antecipada:** glissando contínuo de formantes baseado em cosseno elevado (raised-cosine) iniciado antecipadamente dentro da zona de coarticulação consoante-vogal ($0{,}35 \cdot C$), eliminando estalos e degraus tímbricos.
@@ -217,4 +222,9 @@ O Tainah 2.3.0 expande a síntese acústica com controle e transição contínua
 - **R Rótico / Retroflexo (`[ɚ]` do inglês e R caipira):** atenuação e aproximação de $F_3$ em direção a $F_2$ (~1650–1750 Hz, `f3_ratio < 0.88`), simulação de cavidade sublingual com anti-ressonância logo acima de $F_3$ e reforço do cluster $F_2\text{--}F_3$.
 - **Formante do Cantor:** reforço harmônico na faixa de projeção acústica (~3000 Hz, $\pm 250$ Hz).
 - **API `lt_analyze_formants`:** nova função exportada para análise rápida e detecção precisa de $F_0$, $F_1$, $F_2$, $F_3$ via interpolação quadrática e extração do envelope espectral logarítmico em 128 pontos (`LT_FORMANT_ENVELOPE_POINTS`).
+
+Os novos controles incluem abertura e anterioridade vocálica, tensão, arejamento,
+calor acústico, punch do ataque, modulação de vibrato, seleção do método de F0,
+de-esser dinâmico, growl, saturação glotal, humanização e escala laríngea
+adaptativa. As 22 flags estão descritas no `Tainah.yaml` distribuído com o pacote.
 
