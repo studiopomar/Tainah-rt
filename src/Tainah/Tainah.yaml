@@ -35,19 +35,19 @@ expressions:
     max: 99
     default_value: 0
     is_flag: true
-    flag: H
+    flag: Q
   formant:
     name: Deslocamento de formantes
-    abbr: formant
+    abbr: form
     type: Numerical
     min: -100
     max: 100
     default_value: 0
     is_flag: true
-    flag: P
+    flag: F
   consonant:
     name: Duração da consoante
-    abbr: consonant
+    abbr: cons
     type: Numerical
     min: -100
     max: 100

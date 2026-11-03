@@ -46,8 +46,12 @@ compatíveis com UTAU e OpenUtau conforme descrito neste README.
 - Oferece 22 flags para ajustar timbre, pitch, sopro, formantes, articulação e
   outros aspectos acústicos. Consulte o manifesto `Tainah.yaml` no pacote para
   ver os controles disponíveis no OpenUtau.
-- A flag `P` desloca os formantes sem alterar a nota: valores positivos elevam a
-  posição dos formantes e valores negativos a reduzem.
+- No OpenUtau, o manifesto usa `Q` para corte de agudos e `F` para formantes,
+  evitando conflito com as flags `H` (lowpass) e `P` (normalize) do projeto.
+  No UTAU clássico, `H` e `P` continuam aceitos.
+- A flag `P` no UTAU clássico e `F` no OpenUtau deslocam os formantes sem
+  alterar a nota: valores positivos elevam a posição dos formantes e valores
+  negativos a reduzem.
 - A flag `C` ajusta o tamanho da região consonantal fixa do `oto.ini`: `C0`
   mantém o valor original, `C-100` desativa essa região e `C100` a duplica. Uma
   região fixa maior reserva mais tempo da nota para o ataque e deixa menos tempo
@@ -209,12 +213,17 @@ A ABI continua na versão 2. Os campos opcionais `target_consonant_ms` e `has_ta
 
 O build executa testes de ABI, casos matemáticos comparados às equações do lessampler e 16 comparações de áudio entre CLI e biblioteca. A aprovação auditiva e a validação de cada host devem ser registradas separadamente.
 
-## Novidades do Tainah 3.0.1
+## Novidades do Tainah 3.0.2
 
-O Tainah 3.0.1 reúne os controles de formantes introduzidos na versão 2.3.0 e
-amplia o manifesto do OpenUtau com 16 novos controles acústicos. A ABI permanece
-na versão 2, com os novos campos adicionados ao final da estrutura para manter a
-compatibilidade com hosts existentes.
+O Tainah 3.0.2 corrige o manifesto de expressões do OpenUtau: as abreviações
+respeitam o limite de quatro caracteres e as flags `Q` (corte de agudos) e `F`
+(formantes) evitam colisões com `H` (lowpass) e `P` (normalize). O executável
+continua aceitando `H` e `P` para projetos do UTAU clássico.
+
+A versão reúne os controles de formantes introduzidos na 2.3.0 e os 16 novos
+controles acústicos adicionados na 3.0.1. A ABI permanece na versão 2, com os
+novos campos adicionados ao final da estrutura para manter a compatibilidade
+com hosts existentes.
 
 - **Distorção e mapeamento de formantes ($F_1, F_2, F_3$):** suporte a razões de frequência independentes (`f1_ratio`, `f2_ratio`, `f3_ratio`) relativas aos formantes intrínsecos analisados na vogal de origem. O espectro WORLD é deformado suavemente ao longo de 6 âncoras no eixo de frequência, mantendo harmônicos acima de $F_4$ ancorados.
 - **Transição em Curva-S Antecipada:** glissando contínuo de formantes baseado em cosseno elevado (raised-cosine) iniciado antecipadamente dentro da zona de coarticulação consoante-vogal ($0{,}35 \cdot C$), eliminando estalos e degraus tímbricos.

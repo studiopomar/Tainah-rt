@@ -117,9 +117,12 @@ int main(int argc,char **argv) {
         o.has_target_consonant=1;
         o.target_consonant_ms=std::max(0.0,consonant)*std::pow(2.0,1.0-std::clamp(velocity,-100.0,200.0)/100.0);
         o.pitch_hz=440*std::pow(2.0,(note-69)/12.0);o.gender=flag_value(flags,'g');o.pitch_cents=flag_value(flags,'t')*10.0;o.breathiness=flag_value(flags,'B');
-        o.formant_shift=std::clamp(flag_value(flags,'P'),-100.0,100.0);
+        // OpenUtau reserves P for normalize. Its Tainah manifest uses F; retain P for UTAU.
+        const double formant_shift = has_flag(flags, 'F') ? flag_value(flags, 'F') : flag_value(flags, 'P');
+        o.formant_shift=std::clamp(formant_shift,-100.0,100.0);
         o.consonant_adjustment=std::clamp(flag_value(flags,'C'),-100.0,100.0);
-        const double high=std::clamp(flag_value(flags,'H'),0.0,99.0), nyquist=rate/2.0;
+        // OpenUtau reserves H for lowpass; Q is the collision-free Tainah alias.
+        const double high=std::clamp(std::max(flag_value(flags,'H'), flag_value(flags,'Q')),0.0,99.0), nyquist=rate/2.0;
         o.high_frequency_cutoff=high<=0.0||nyquist<=1000.0?0.0:nyquist*std::pow(1000.0/nyquist,high/99.0);
         o.frame_period_ms=5;o.f0_floor=55;o.f0_ceiling=1760;
         o.f0_method = (flag_value(flags, 'd', 0.0) >= 1.0) ? 2 : 1;

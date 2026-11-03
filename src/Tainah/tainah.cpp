@@ -195,7 +195,7 @@ bool source_region(const lt_render_options *o, size_t &start, size_t &end) {
 std::shared_ptr<const lessAudioModel> obtain_analysis(const lt_render_options *o, lt_error *error, int32_t &status) {
     status = 0;
     uint64_t key = 14695981039346656037ull;
-    key = hash_bytes(key, "tainah-rt/3.0.1-world", std::strlen("tainah-rt/3.0.1-world"));
+    key = hash_bytes(key, "tainah-rt/3.0.2-world", std::strlen("tainah-rt/3.0.2-world"));
     key = hash_bytes(key, o->input, o->input_length * sizeof(float));
     key = hash_bytes(key, &o->sample_rate, sizeof(o->sample_rate));
     key = hash_bytes(key, &o->frame_period_ms, sizeof(double));
@@ -341,7 +341,7 @@ double piecewise(double x, const double *xs, const double *ys, int n) {
 extern "C" {
 uint32_t lt_abi_version(void) { return LT_ABI_VERSION; }
 uint32_t lt_render_options_size(void) { return static_cast<uint32_t>(sizeof(lt_render_options)); }
-const char *lt_version(void) { return "tainah-rt/3.0.1-world"; }
+const char *lt_version(void) { return "tainah-rt/3.0.2-world"; }
 void lt_pcm_free(lt_pcm *pcm) {
     if (!pcm || pcm->struct_size < sizeof(lt_pcm)) return;
     delete[] pcm->samples;

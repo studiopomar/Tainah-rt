@@ -84,6 +84,6 @@ jobs:
           - Manifesto de expressões para as flags do OpenUtau.
           - Licenças e avisos de autoria.
 
-          O pacote inclui 22 flags para ajustar timbre, pitch, formantes, articulação e outros aspectos acústicos. Consulte o README e o manifesto `Tainah.yaml` incluído no pacote.
+          O pacote inclui 22 flags para ajustar timbre, pitch, formantes, articulação e outros aspectos acústicos. No OpenUtau, `Q` controla o corte de agudos e `F` os formantes, evitando conflitos com `H` (lowpass) e `P` (normalize); `H` e `P` continuam aceitos no UTAU clássico. Consulte o README e o manifesto `Tainah.yaml` incluído no pacote.
           EOF
           gh release create "$TAG" downloads/*.zip --title "Tainah-LTS $TAG" --notes-file notas.md
